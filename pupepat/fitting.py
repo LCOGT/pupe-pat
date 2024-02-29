@@ -67,16 +67,19 @@ def elliptical_annulus(x, y, x0_inner=0.0, y0_inner=0.0, a_inner=1.0, b_inner=1.
 def fit_defocused_image(filename, plot_basename):
     logger.info('Extracting sources', extra={'tags': {'filename': os.path.basename(filename)}})
     hdu = fits.open(filename)
-    data = get_bias_corrected_data_in_electrons(hdu)
+    if not hdu[0].header.get('L1STATBI', None):
+        data = get_bias_corrected_data_in_electrons(hdu)
+    else:
+        data = hdu[0].data
 
     # repair any hot pixels and/or cosmic rays (gain=1.0 b/c we're already in units of electrons)
     hpcr_mask, cleaned_data = astroscrappy.detect_cosmics(data, readnoise=hdu[0].header['RDNOISE'], gain=1.0,
-                                                  sigclip=20.0, sigfrac=0.5, objlim=20.0, cleantype='idw')
+                                                          sigclip=20.0, sigfrac=0.5, objlim=20.0, cleantype='idw')
 
     data = cleaned_data
     sources = run_sep(data, hdu[0].header)
     logger.info('Found {num_s} sources'.format(num_s=len(sources)),
-                extra= {'tags': {'filename': os.path.basename(filename)}})
+                extra={'tags': {'filename': os.path.basename(filename)}})
 
     best_fit_models = [fit_cutout(data, source, plot_basename, os.path.basename(filename),
                                   hdu[0].header, i)

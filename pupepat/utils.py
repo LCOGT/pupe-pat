@@ -68,22 +68,22 @@ def offsets(x1, y1, x2, y2):
 
 def get_bias_corrected_data_in_electrons(hdu):
     """
-    Estimate the bias level of image and substract it from the image.
+    Estimate the bias level of image and subtract it from the image.
     If bias estimate is negative, this means that the GAIN in the fits HDU is wrong.
     In this case, issue a warning and re-scale data after calculating what the gain
     should have been.
 
     Uses median_absolute_deviation (MAD) to compute standard deviation.
-    Note: does not substract background from data to compute noise, as was done
+    Note: does not subtract background from data to compute noise, as was done
     prior to Sept.2018 parameter tuning.
 
     :param hdu: fits hdu with the image in question
 
     :return: np.array data_e
     """
-    gain = float(hdu[0].header['GAIN'])            # e-/count
-    read_noise_e = float(hdu[0].header['RDNOISE']) # e-/pixel
-    data_e = gain * hdu[0].data                    # counts to electrons
+    gain = float(hdu[0].header['GAIN'])             # e-/count
+    read_noise_e = float(hdu[0].header['RDNOISE'])  # e-/pixel
+    data_e = gain * hdu[0].data                     # counts to electrons
 
     # 1.48 here goes from median absolute deviation to standard deviation
     noise_e = 1.48 * median_absolute_deviation(data_e)
@@ -98,7 +98,7 @@ def get_bias_corrected_data_in_electrons(hdu):
         sqrt_median_e = np.sqrt(np.median(data_e))
         scale_factor = sqrt_median_e / noise_e
         msg = 'Negative bias {b:0.2f}. Scaling data by (sqrt(median)/noise): ({r:0.2f}/{n:0.2f})= {s:0.2f}'
-        logger.warning(msg.format(b=estimated_bias_level_in_electrons, s=scale_factor, r=sqrt_median_e, n=noise_e ))
+        logger.warning(msg.format(b=estimated_bias_level_in_electrons, s=scale_factor, r=sqrt_median_e, n=noise_e))
         data_e *= scale_factor
     else:
         # bias corrected data in electrons
