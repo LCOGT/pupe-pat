@@ -67,6 +67,8 @@ def elliptical_annulus(x, y, x0_inner=0.0, y0_inner=0.0, a_inner=1.0, b_inner=1.
 def fit_defocused_image(filename, plot_basename):
     logger.info('Extracting sources', extra={'tags': {'filename': os.path.basename(filename)}})
     hdu = fits.open(filename)
+    # Skip bias subtraction when bias already subtracted ('L1STATBI' Header Keyword only exists in reduced images, and
+    # should be 1 if bias successfully removed.)
     if not hdu[0].header.get('L1STATBI', None):
         data = get_bias_corrected_data_in_electrons(hdu)
     else:
