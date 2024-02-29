@@ -3,8 +3,8 @@ project)
 # Pupil Plate Ellipticity (PUPE)- Photometric Analysis Tool (PAT)
 
 ## Purpose
-The goal of this software tool is to help the user isolate which
-pupil plate image by identifying the best position for the tip and tilt
+The goal of this software tool is to help the user create and analyze pupil
+plate images in order to identify the best position for the tip and tilt
 of the M2 mechanism during the collimation of a telescope. A "pupil plate"
 is a defocused star that is defocused so much that it appears as a donut.
 The shape of that donut can be used to characterize (and hopefully be able
@@ -17,8 +17,12 @@ sections are meant for developers.
 
 [//]: # (Code examples of the usage)
 ## Examples
-On the `optics-support` machine, the standard offline analysis can be run 
-using the following command:
+Using the engineering password for the "aws site", log onto the
+`operational-support` machine via
+```
+ssh eng@operational-support.aws.lco.gtn
+```
+The standard offline analysis can be run using the following command:
 ```
 pupe-pat /home/eng/input_data_20180501 /home/eng/output_results_20180501
 ```
@@ -30,14 +34,14 @@ pupe-pat -h
 will print the help message with descriptions of the parameters.
 
 The the most up to date docker image and script are automatically installed 
-on `optics-support` using Puppet.
+on `operational-support` using Puppet.
 
 To run the real-time analysis, run:
 ```
 pupe-pat-realtime /home/eng/input_data_20180501 /home/eng/output_results_20180501
 ```
 The real-time analysis mode should be run on a machine that has 
-/archive mounted, specifically `optics-support`.
+/archive mounted, specifically `operational-support`.
 Once images are done being taken for the night, press `control-c` to stop
 the listener and generate the merged pdfs described below.
 
@@ -108,9 +112,9 @@ instead.
 [//]: #
 ## Installation
 The code is currently installed via Puppet. The only machine that has the code
-automatically installed is `optics-support`.
+automatically installed is `operational-support`.
 
-On other machines, he code is meant to be run in a docker file. 
+On other machines, the code is meant to be run in a docker file.
 You can pull the docker image by typing the following: 
 ```
 docker pull docker.lco.global/pupe-pat:{0.1.0}
@@ -128,12 +132,12 @@ python setup.py install
 ```
 but the docker installation is preferred. This setup will not include the wrapper
 scripts described above in the Examples section above. For using a 
-machine besides `optics-support` or using a direct python installation
+machine besides `operational-support` or using a direct python installation
 see the Advanced Examples below.
 
 ### Prerequisites
 Docker needs to be installed on your system and you need to be a docker user.
-`eng` is probably the best option. `optics-support` is the only machine that
+`eng` is probably the best option. `operational-support` is the only machine that
 will have the pupe-pat and pupe-pat-realtime wrapper scripts installed via 
 Puppet currently.
 
@@ -163,9 +167,9 @@ Puppet currently.
 
 [//]: # (Describe how to run tests in the project)
 ## Tests
-Currently the tests are run manually. Our test data set was taken on
+Currently, the tests are run manually. Our test data set was taken on
 kb05 at bpl on 20180409. We use the whole raw directory of images.
-To reduce the test data run the following on the `optics-support` machine
+To reduce the test data run the following on the `operational-support` machine
 as the `eng` user:
 ```
 pupe-pat /home/eng/pupe-pat-test-data /home/eng/pupe-pat-tests-results
@@ -173,7 +177,7 @@ pupe-pat /home/eng/pupe-pat-test-data /home/eng/pupe-pat-tests-results
 You can test other versions using the docker commands
 in the Advanced Examples section below.
 
-The tests pass if all of the blue circles align with the donuts
+The tests pass if all the blue circles align with the donuts
 in the PDF files produced in the output directory.
 
 Eventually this procedure will be replaced with automatic testing in Jenkins.
@@ -181,7 +185,7 @@ Eventually this procedure will be replaced with automatic testing in Jenkins.
 [//]: # (Details on how to deploy the project; if the project is deployed using
 CD, just put a link to the job in this section)
 ## Deployment
-Currently new versions are built manually. You can run
+Currently, new versions are built manually. You can run
 ```
 docker build -t docker.lco.global/pupe-pat:{0.1.0} .
 docker push docker.lco.global/pupe-pat:{0.1.0}
@@ -195,7 +199,7 @@ deploy the puppet config files to use the new version.
 
 [//]: #
 ## Advanced Examples
-On machines other than `optics-support`, if the script is installed in a python
+On machines other than `operational-support`, if the script is installed in a python
 environment, the standard offline analysis can be
 run using the following command:
 ```
@@ -221,7 +225,7 @@ The real-time analysis has identical arguments, but is run as
 run_pupepat_listener /home/eng/input_data_20180501 --output-dir  /home/eng/output_results_20180501
 ```
 
-On machines other than `optics-support` the preferred method to run the code
+On machines other than `operational-support` the preferred method to run the code
 is via docker. You can do this by running
 ```
 docker pull docker.lco.global/pupe-pat:{0.1.0}
