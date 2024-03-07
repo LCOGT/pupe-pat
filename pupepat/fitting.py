@@ -86,7 +86,8 @@ def fit_defocused_image(filename, plot_basename):
 
 def cutout_has_multiple_sources(data, cutout, header, background):
     # Run sep again and make sure there is only one source in the cutout
-    cutout_sources = run_sep(cutout, header, background_mask_threshold=25.0 * np.sqrt(background) + background)
+    read_noise = header['RDNOISE']
+    cutout_sources = run_sep(cutout, header, background_mask_threshold=25.0 * np.sqrt(background + read_noise ** 2.0) + background)
 
     if len(cutout_sources) > 1:
         logger.error('Too many sources detected in cutout. Likely source crowding.')
@@ -113,9 +114,12 @@ def fit_cutout(data, source, plot_filename, image_filename, header, id, fit_circ
     ##inner_radius_guess = 3.4 * np.abs(header['FOCDMD']) # Rob Siverd, personal communiation
     ##outer_radius_guess = 3.0 * inner_radius_guess \
     ##                     if header['FOCDMD'] > 0 else 2.25 * inner_radius_guess
-
+    read_noise = header['RDNOISE']
     inner_brightness_guess = np.median(cutout[r < 5])
-    inside_donut_guess = cutout > (20.0 * np.sqrt(np.median(inner_brightness_guess)) + inner_brightness_guess)
+    inside_donut_guess = cutout > (20.0 * np.sqrt(inner_brightness_guess + read_noise ** 2.0) + inner_brightness_guess)
+    if inside_donut_guess.sum() < 100:
+        logger.error("Filtering source. Not a donut.")
+        return
     inner_radius_guess = np.percentile(r[inside_donut_guess].flatten(), 5)
 
     # Remake the cutout with +- 4 * inner_radius_guess
@@ -128,14 +132,14 @@ def fit_cutout(data, source, plot_filename, image_filename, header, id, fit_circ
     if cutout_has_multiple_sources(data, cutout, header, background):
         return
 
-    inside_donut_guess = cutout > (20.0 * np.sqrt(np.median(inner_brightness_guess)) + background)
+    inside_donut_guess = cutout > (20.0 * np.sqrt((inner_brightness_guess) + read_noise ** 2.0) + background)
     outer_radius_guess = np.percentile(r[inside_donut_guess].flatten(), 90)
 
     brightness_guess = np.median(cutout[np.logical_and(r < outer_radius_guess, r > inner_radius_guess)])
     inner_brightness_guess = np.median(cutout[r < inner_radius_guess])
 
     x, y = np.meshgrid(np.arange(cutout.shape[1]), np.arange(cutout.shape[0]))
-    error = np.sqrt(np.abs(cutout))
+    error = np.sqrt(np.abs(cutout) + read_noise ** 2.0)
     if fit_circle:
         best_fit_parameter_names = ['x0_inner', 'y0_inner', 'r_inner', 'amplitude_inner',
                                     'x0_outer', 'y0_outer', 'r_outer', 'amplitude_outer', 'background']

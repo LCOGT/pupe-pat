@@ -17,7 +17,8 @@ import collections
 import os
 import sep
 import logging
-from PyPDF2 import PdfFileReader, PdfFileWriter
+from PyPDF2 import PdfReader, PdfWriter
+from scipy.optimize import root
 
 logger = logging.getLogger('pupepat')
 
@@ -43,7 +44,7 @@ config = {
     'source_filters': {'bad_column_max': 400.0,
                        'bad_column_min': 200.0,
                        'edge_proximity_limit': 150.0,
-                       'focus_scale_factor': 200.0,
+                       'in_focus_contrast_threshold': 20.0,
                        'ellipticity_limit': 1.15,
     },
 }
@@ -55,7 +56,7 @@ def update_config_from_user_yaml(dest, source):
     Generically, update dest dictionary with key,value pairs from source dictionary.
     """
     for key, value in source.items():
-        if isinstance(value, collections.Mapping):
+        if isinstance(value, collections.abc.Mapping):
             dest[key] = update_config_from_user_yaml(dest.get(key, {}), value)
         else:
             dest[key] = value
@@ -94,11 +95,17 @@ def get_bias_corrected_data_in_electrons(hdu):
     # Scaling the data here is a work-around for that.
     if estimated_bias_level_in_electrons < 0:
         # here, we're really figuring about what the gain should have been and re-scaling the data
-        noise_e = 1.48 * median_absolute_deviation(data_e)
-        sqrt_median_e = np.sqrt(np.median(data_e))
-        scale_factor = sqrt_median_e / noise_e
-        msg = 'Negative bias {b:0.2f}. Scaling data by (sqrt(median)/noise): ({r:0.2f}/{n:0.2f})= {s:0.2f}'
-        logger.warning(msg.format(b=estimated_bias_level_in_electrons, s=scale_factor, r=sqrt_median_e, n=noise_e ))
+        data_median = np.median(data_e)
+        signal_to_noise = data_median / noise_e
+
+        # SNR = g N / sqrt(g N + sig^2) where g is the gain. And we need to solve for the gain
+        def gain_equation(gain):
+            return signal_to_noise ** 2.0 * (gain * data_median + read_noise_e ** 2.0) \
+                - gain ** 2.0 * data_median ** 2.0
+
+        scale_factor = root(gain_equation, [1.0]).x[0]
+        msg = 'Negative bias {b:0.2f}. This probably means the gain value in the header is wrong. Scaling data by {s:0.2f}'
+        logger.warning(msg.format(b=estimated_bias_level_in_electrons, s=scale_factor))
         data_e *= scale_factor
     else:
         # bias corrected data in electrons
@@ -158,10 +165,7 @@ def source_is_valid(data, source):
     bad_column_min = config['source_filters']['bad_column_min']
     got_bad_columns = (((source['xmax'] - source['xmin']) < bad_column_min and (source['ymax'] - source['ymin']) > bad_column_max) or
                        ((source['xmax'] - source['xmin']) > bad_column_max and (source['ymax'] - source['ymin']) < bad_column_min))
-
-    focus_scale_factor = config['source_filters']['focus_scale_factor']
     background = np.median(data)
-    in_focus = np.abs(data[int(source['y']), int(source['x'])] - background) > focus_scale_factor * np.sqrt(background)
 
     edge_limit = config['source_filters']['edge_proximity_limit']
     too_close_to_edge = source['x'] - edge_limit < 0 or source['y'] - edge_limit < 0
@@ -170,12 +174,10 @@ def source_is_valid(data, source):
     ellipticity_limit = config['source_filters']['ellipticity_limit']
     not_a_circle = (max((source['a']/source['b']), (source['a']/source['b'])) > ellipticity_limit)
 
-    if got_bad_columns or in_focus or too_close_to_edge or not_a_circle:
+    if got_bad_columns or too_close_to_edge or not_a_circle:
         msg = 'Filtered source at ({x:0.2f},{y:0.2f})'.format(x=source['x'], y=source['y'])
         if got_bad_columns:
             error_message = 'Not enough columns.'
-        elif in_focus:
-            error_message = 'Not a donut.'
         elif too_close_to_edge:
             error_message = 'Too close to the edge.'
         elif not_a_circle:
@@ -185,7 +187,7 @@ def source_is_valid(data, source):
         logger.info('Source at ({x:0.2f}, {y:0.2f}. A, B: ({a:0.2f}, {b:0.2f})'\
                     .format(x=source['x'], y=source['y'], a=source['a'], b=source['b']))
 
-    return not (got_bad_columns or in_focus or too_close_to_edge or not_a_circle)
+    return not (got_bad_columns or too_close_to_edge or not_a_circle)
 
 
 def make_cutout(data, x0, y0, r):
@@ -210,15 +212,15 @@ def run_sep(data, header, background_mask_threshold=None):
     # Pupils cover more pixels than point sources.
     # So, set the number of source pixels to be 10% of the total (default=300000 pixels)
     sep.set_extract_pixstack(max(300000, int(data.size * 0.1)))
+    read_noise_e = float(header['RDNOISE'])
 
     if background_mask_threshold is None:
-        background_mask_threshold = background_mask_threshold_scale_factor * np.sqrt(np.median(data)) + np.median(data)
+        background_mask_threshold = background_mask_threshold_scale_factor * np.sqrt(np.median(data) + read_noise_e ** 2.0) + np.median(data)
 
     background = sep.Background(np.ascontiguousarray(data),
                                 mask=np.ascontiguousarray(data > background_mask_threshold),
                                 bw=bg_box_size, bh=bg_box_size)
 
-    read_noise_e = float(header['RDNOISE'])
     extract_err = np.sqrt(data + read_noise_e ** 2.0)
     return sep.extract(data - background, extract_SN_threshold,
                        err=extract_err, minarea=min_area, deblend_cont=1.0, filter_kernel=None)
@@ -245,9 +247,9 @@ def merge_pdfs(output_directory, output_table, output_pdf='pupe-pat'):
     for demanded_focus in np.unique(data['FOCDMD']):
         focus_set_indexes = data['FOCDMD'] == demanded_focus
 
-        pdf_writer = PdfFileWriter()
+        pdf_writer = PdfWriter()
         for pdf_file in pdf_files[focus_set_indexes]:
-            pdf_writer.appendPagesFromReader(PdfFileReader(pdf_file))
+            pdf_writer.append_pages_from_reader(PdfReader(pdf_file))
 
         output_filename = os.path.join(output_directory,
                                        '{basename}-{focdmd}-donut.pdf'.format(basename=output_pdf,

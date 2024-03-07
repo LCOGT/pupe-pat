@@ -19,5 +19,5 @@ source_filters:
   bad_column_min: 200
   bad_column_max: 400  
   edge_proximity_limit: 150
-  focus_scale_factor: 200
+  in_focus_contrast_threshold: 10
   ellipticity_limit: 1.15

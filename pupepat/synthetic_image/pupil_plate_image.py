@@ -24,7 +24,7 @@ class PupilPlateImage:
 
         :return: image
         """
-        image = np.zeros(self.shape, dtype=np.float_)
+        image = np.zeros(self.shape, dtype=float)
 
         # add the background sky level
         image += self.sky_level

@@ -84,7 +84,7 @@ class CircularPupil(Source):
     @property
     def decal(self):
         shape = (2*self.half_width + 1, 2*self.half_width + 1)
-        _decal = np.zeros(shape, dtype=np.float_)
+        _decal = np.zeros(shape, dtype=float)
 
         ci, cj = self.half_width, self.half_width  # center of decal
         ix, jx = np.meshgrid(np.arange(shape[0]), np.arange(shape[1]))
@@ -138,7 +138,7 @@ class EllipticalPupil(Source):
     @property
     def decal(self):
         shape = (2*self.half_width + 1, 2*self.half_width + 1)
-        _decal = np.zeros(shape, dtype=np.float_)
+        _decal = np.zeros(shape, dtype=float)
 
         center_i, center_j = self.half_width, self.half_width  # center of decal
         X, Y = np.meshgrid(np.arange(shape[0]), np.arange(shape[1]))
