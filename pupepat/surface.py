@@ -40,7 +40,7 @@ class SurfaceFitter(object):
         :param y: y coordinate grid for the surface
         :param z: 2D surface data
         """
-        design_matrix = np.zeros((x.size, len(self.exponents)), dtype=np.float)
+        design_matrix = np.zeros((x.size, len(self.exponents)), dtype=float)
         for k, (i, j) in enumerate(self.exponents):
             design_matrix[:, k] = x.flatten() ** i * y.flatten() ** j
         self.coefficients, _, _, _ = np.linalg.lstsq(design_matrix, z.flatten(), rcond=None)
