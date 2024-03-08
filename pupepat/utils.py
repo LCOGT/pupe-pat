@@ -39,7 +39,7 @@ config = {
     },
     'cutout': {
         'cutout_radius': 150,
-        'cutout_padding': 0.2 # percent additional margin added to each edge
+        'cutout_padding': 0.2  # percent additional margin added to each edge
     },
     'source_filters': {'bad_column_max': 400.0,
                        'bad_column_min': 200.0,
@@ -70,9 +70,10 @@ def offsets(x1, y1, x2, y2):
 def get_bias_corrected_data_in_electrons(hdu):
     """
     Estimate the bias level of image and substract it from the image.
-    If bias estimate is negative, this means that the GAIN in the fits HDU is wrong.
-    In this case, issue a warning and re-scale data after calculating what the gain
-    should have been.
+    In principle the bias measured here can be negative. The real goal of this
+    function is to make the noise be approximately poisson + read noise. If the header
+    underestimates the read noise for example, then this would lead to a negative bias
+    measurement here but it is equivalent to updating the header value.
 
     Uses median_absolute_deviation (MAD) to compute standard deviation.
     Note: does not substract background from data to compute noise, as was done
@@ -91,25 +92,8 @@ def get_bias_corrected_data_in_electrons(hdu):
 
     estimated_bias_level_in_electrons = np.median(data_e) - noise_e * noise_e + read_noise_e * read_noise_e
 
-    # If the bias is negative, that means the GAIN is probably wrong in the HDU
-    # Scaling the data here is a work-around for that.
-    if estimated_bias_level_in_electrons < 0:
-        # here, we're really figuring about what the gain should have been and re-scaling the data
-        data_median = np.median(data_e)
-        signal_to_noise = data_median / noise_e
-
-        # SNR = g N / sqrt(g N + sig^2) where g is the gain. And we need to solve for the gain
-        def gain_equation(gain):
-            return signal_to_noise ** 2.0 * (gain * data_median + read_noise_e ** 2.0) \
-                - gain ** 2.0 * data_median ** 2.0
-
-        scale_factor = root(gain_equation, [1.0]).x[0]
-        msg = 'Negative bias {b:0.2f}. This probably means the gain value in the header is wrong. Scaling data by {s:0.2f}'
-        logger.warning(msg.format(b=estimated_bias_level_in_electrons, s=scale_factor))
-        data_e *= scale_factor
-    else:
-        # bias corrected data in electrons
-        data_e -= estimated_bias_level_in_electrons
+    # bias corrected data in electrons
+    data_e -= estimated_bias_level_in_electrons
 
     return data_e
 

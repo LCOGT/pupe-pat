@@ -1,13 +1,12 @@
-FROM docker.lco.global/docker-miniconda3:4.4.10
-MAINTAINER Las Cumbres Observatory <webmaster@lco.global>
+FROM continuumio/miniconda3:23.5.2-0
 
+RUN apt-get -y update && apt-get -y install gcc libcfitsio-bin && \
+        apt-get autoclean && \
+        rm -rf /var/lib/apt/lists/*
+        
 RUN conda install -y numpy astropy pytest pytest-runner ipython matplotlib scipy \
         && conda install watchdog emcee corner -c conda-forge \
         && conda clean -y --all
-
-RUN yum -y install epel-release gcc \
-        && yum install -y fpack \
-        && yum -y clean all
 
 RUN mkdir /home/eng \
         && /usr/sbin/groupadd -g 500 "eng" \
@@ -18,22 +17,17 @@ RUN pip install lcogt-logging Cython \
         && rm -rf ~/.cache/pip
 
 RUN git clone https://github.com/mstamy2/PyPDF2 /usr/src/pypdf2
-WORKDIR /usr/src/pypdf2
-RUN python setup.py install
+RUN pip install /usr/src/pypdf2
 
 RUN git clone https://github.com/kbarbary/sep.git /usr/src/sep
-WORKDIR /usr/src/sep
-RUN python setup.py install
+RUN pip install /usr/src/sep
 
 RUN git clone https://github.com/astropy/astroscrappy.git /usr/src/astroscrappy
-WORKDIR /usr/src/astroscrappy
-RUN python setup.py install
+RUN pip install /usr/src/astroscrappy
 
 COPY . /pupepat/src/
 
-WORKDIR /pupepat/src
-
-RUN python setup.py install
+RUN pip install /pupepat/src
 
 ENV HOME /home/eng
 
