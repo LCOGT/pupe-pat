@@ -67,3 +67,24 @@ def generate_ellipse(x0, y0, a, b, theta):
     np.append(x, x[0])
     np.append(y, y[0])
     return x, y
+
+
+def calculate_donut_offset(inner_coordinate, outer_coordinate, sbig=False):
+    """
+    Calculate the offset of the inner coordinate from the outer coordinate.
+    Will return the offset in pixels unless sbig is set to True, in which case it will return the offset in mm of M1
+    offset based on calculations by Patrick Conway using zemax in Feb. 2018.
+    (https://lcogt.slack.com/archives/C8V95PF9T/p1519653167000491)
+
+    :param inner_coordinate: inner coordinate (x or y) in pixels
+    :param outer_coordinate: outer coordinate (x or y) in pixels 
+    :param sbig: set to True if using a kb camera, and you want the offset to be in mm of M1 offset
+    :return: offset
+    """
+
+    pixel_to_m1_mm = 9.679  # mm of M1 offset per pixel for an sbig on a 1m telescope
+
+    offset = inner_coordinate - outer_coordinate  # pixels
+    if sbig:
+        offset /= pixel_to_m1_mm  # mm of M1 offset
+    return offset
