@@ -44,30 +44,29 @@ def plot_best_fit_ellipse(output_filename, data_cutout, best_fit_model, header):
     pyplot.text(data_cutout.shape[1] * 0.01, data_cutout.shape[0] * 0.915,
                 'Outer: {x: 0.3f}, {y: 0.3f}'.format(x=best_fit_model.x0_outer, y=best_fit_model.y0_outer),
                 color='white')
-
-    # If using an sbig camera on a 1m, calculate the M1 offset, otherwise give offset in pixels
-    if 'kb' in header['INSTRUME'].lower() and '1m0' in header['TELID'].lower():
-        pyplot.text(data_cutout.shape[1] * 0.01, data_cutout.shape[0] * 0.88,
-                    'M1 Offset (mm): {x: 0.3f}, {y: 0.3f}'.format(x=calculate_donut_offset(best_fit_model.x0_inner,
-                                                                                           best_fit_model.x0_outer,
-                                                                                           sbig=True),
-                                                                  y=calculate_donut_offset(best_fit_model.y0_inner,
-                                                                                           best_fit_model.y0_outer,
-                                                                                           sbig=True)),
-                    color='white')
-    else:
-        pyplot.text(data_cutout.shape[1] * 0.01, data_cutout.shape[0] * 0.88,
-                    'I-O Offset (pix): {x: 0.3f}, {y: 0.3f}'.format(x=calculate_donut_offset(best_fit_model.x0_inner,
-                                                                                             best_fit_model.x0_outer),
-                                                                    y=calculate_donut_offset(best_fit_model.y0_inner,
-                                                                                             best_fit_model.y0_outer)),
-                    color='white')
+    pyplot.text(data_cutout.shape[1] * 0.01, data_cutout.shape[0] * 0.88,
+                'I-O Offset (pix): {x: 0.3f}, {y: 0.3f}'.format(x=calculate_donut_offset(best_fit_model.x0_inner,
+                                                                                         best_fit_model.x0_outer),
+                                                                y=calculate_donut_offset(best_fit_model.y0_inner,
+                                                                                         best_fit_model.y0_outer)),
+                color='white')
     pyplot.text(data_cutout.shape[1] * 0.6, data_cutout.shape[0] * 0.95,
                 'M2 Pitch: {pitch: 0.3f}"'.format(pitch=header['M2PITCH']), color='white')
     pyplot.text(data_cutout.shape[1] * 0.6, data_cutout.shape[0] * 0.915,
                 'M2 Roll: {roll: 0.3f}"'.format(roll=header['M2ROLL']), color='white')
     pyplot.text(data_cutout.shape[1] * 0.6, data_cutout.shape[0] * 0.88,
                 'FOCDMD: {focdmd: 0.3f} mm'.format(focdmd=header['FOCDMD']), color='white')
+    # If using an sbig camera on a 1m, calculate the M1 offset
+    if 'kb' in header['INSTRUME'].lower() and '1m0' in header['TELID'].lower():
+        pyplot.text(data_cutout.shape[1] * 0.03, data_cutout.shape[0] * 0.03,
+                    'M1 Offset (mm): x={x: 0.3f}, y={y: 0.3f}'.format(
+                        x=calculate_donut_offset(best_fit_model.x0_inner,
+                                                 best_fit_model.x0_outer,
+                                                 sbig=True),
+                        y=calculate_donut_offset(best_fit_model.y0_inner,
+                                                 best_fit_model.y0_outer,
+                                                 sbig=True)),
+                    color='white')
     pyplot.tight_layout()
     pyplot.savefig(output_filename)
 

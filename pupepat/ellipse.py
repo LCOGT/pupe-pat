@@ -77,7 +77,7 @@ def calculate_donut_offset(inner_coordinate, outer_coordinate, sbig=False):
     (https://lcogt.slack.com/archives/C8V95PF9T/p1519653167000491)
 
     :param inner_coordinate: inner coordinate (x or y) in pixels
-    :param outer_coordinate: outer coordinate (x or y) in pixels 
+    :param outer_coordinate: outer coordinate (x or y) in pixels
     :param sbig: set to True if using a kb camera, and you want the offset to be in mm of M1 offset
     :return: offset
     """
