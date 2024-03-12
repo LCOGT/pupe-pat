@@ -76,6 +76,8 @@ def calculate_donut_offset(inner_coordinate, outer_coordinate, sbig=False):
     offset based on calculations by Patrick Conway using zemax in Feb. 2018.
     (https://lcogt.slack.com/archives/C8V95PF9T/p1519653167000491)
 
+    Warning from Brook: The signs of the offsets assume the camera was installed with the correct orientation.
+
     :param inner_coordinate: inner coordinate (x or y) in pixels
     :param outer_coordinate: outer coordinate (x or y) in pixels
     :param sbig: set to True if using a kb camera, and you want the offset to be in mm of M1 offset
